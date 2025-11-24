@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Job Listings — Filterable Cards</title>
+  <style>
+    :root{
+      --bg:#f0f6f8; --card:#fff; --accent:#5ba4a4; --muted:#7b8e8e; --shadow: 0 6px 20px rgba(91,164,164,0.12);
+      --radius:8px; --gap:18px;
+    }
+    *{box-sizing:border-box}
+    body{font-family:Inter,Segoe UI,Roboto,system-ui,Arial; margin:0; background:linear-gradient(180deg,#eef9f9 0%,var(--bg) 100%); color:#102a2a; padding:48px}
+
+    .container{max-width:1100px; margin:0 auto}
+
+    /* filter bar */
+    .filter-bar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;background:var(--card);padding:14px;border-radius:10px;box-shadow:var(--shadow);margin-bottom:22px}
+    .chip{padding:8px 12px;border-radius:20px;border:1px solid #e6efef;background:#f7fdfd;cursor:pointer;font-size:13px}
+    .chip.active{background:var(--accent);color:white;border-color:transparent}
+    .clear-btn{margin-left:auto;background:transparent;border:none;color:var(--muted);cursor:pointer}
+
+    /* jobs grid */
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:var(--gap)}
+    .card{background:var(--card);padding:18px;border-radius:var(--radius);box-shadow:var(--shadow);display:flex;gap:16px;align-items:flex-start;position:relative}
+    .logo{width:48px;height:48px;border-radius:8px;background:#eef;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--accent)}
+    .card .meta{flex:1}
+    .company{display:flex;gap:10px;align-items:center;margin-bottom:6px}
+    .company h4{margin:0;font-size:15px}
+    .company .badges{display:flex;gap:8px;margin-left:8px}
+    .badge{background:var(--accent);color:#fff;padding:4px 8px;border-radius:12px;font-size:12px}
+    .position{font-size:16px;margin:6px 0}
+    .info{color:var(--muted);font-size:13px}
+
+    .tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .tag{padding:6px 10px;background:#f1fbfb;border-radius:8px;font-size:13px;cursor:pointer;border:1px solid transparent}
+    .tag:hover{transform:translateY(-2px)}
+
+    /* when single column cards centered on small screens */
+    @media (max-width:520px){
+      body{padding:20px}
+      .grid{grid-template-columns:1fr}
+      .container{padding:0 6px}
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="filter-bar" id="filterBar">
+      <div class="chip" data-filter="all">All</div>
+      <div class="chip" data-filter="Frontend">Frontend</div>
+      <div class="chip" data-filter="Backend">Backend</div>
+      <div class="chip" data-filter="Fullstack">Fullstack</div>
+      <div class="chip" data-filter="Senior">Senior</div>
+      <button class="clear-btn" id="clearBtn">Clear</button>
+    </div>
+
+    <div class="grid" id="jobsGrid">
+      <!-- cards injected here -->
+    </div>
+  </div>
+
+  <script>
+    // sample data (similar to Frontend Mentor structure)
+    const jobs = [
+      {id:1,company:'Photosnap',logo:'P',new:true,featured:true,position:'Senior Frontend Developer',role:'Frontend',level:'Senior',postedAt:'1d ago',contract:'Full Time',location:'USA',languages:['HTML','CSS','JavaScript']},
+      {id:2,company:'Manage',logo:'M',new:true,featured:false,position:'Fullstack Developer',role:'Fullstack',level:'Midweight',postedAt:'2d ago',contract:'Part Time',location:'Remote',languages:['Python','React']},
+      {id:3,company:'Account',logo:'A',new:false,featured:false,position:'Junior Backend Dev',role:'Backend',level:'Junior',postedAt:'5d ago',contract:'Contract',location:'Germany',languages:['Node','Express']},
+      {id:4,company:'MyHome',logo:'MH',new:false,featured:true,position:'Lead Designer',role:'Frontend',level:'Senior',postedAt:'3d ago',contract:'Full Time',location:'UK',languages:['Figma','CSS']},
+      {id:5,company:'Loop',logo:'L',new:true,featured:false,position:'Software Engineer',role:'Backend',level:'Midweight',postedAt:'4d ago',contract:'Full Time',location:'India',languages:['Ruby','Rails']},
+      {id:6,company:'Shortly',logo:'S',new:false,featured:false,position:'Frontend Engineer',role:'Frontend',level:'Junior',postedAt:'1w ago',contract:'Full Time',location:'Remote',languages:['JavaScript','React']}
+    ];
+
+    const jobsGrid = document.getElementById('jobsGrid');
+    const filterBar = document.getElementById('filterBar');
+    const clearBtn = document.getElementById('clearBtn');
+
+    let activeFilters = new Set();
+
+    function renderJobs(list){
+      jobsGrid.innerHTML = '';
+      if(list.length===0){ jobsGrid.innerHTML = '<p style="padding:20px">No jobs found.</p>'; return }
+      list.forEach(job=>{
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="logo">${job.logo}</div>
+          <div class="meta">
+            <div class="company">
+              <h4>${job.company}</h4>
+              <div class="badges">
+                ${job.new?'<span class="badge">NEW!</span>':''}
+                ${job.featured?'<span class="badge">FEATURED</span>':''}
+              </div>
+            </div>
+            <div class="position">${job.position}</div>
+            <div class="info">${job.postedAt} • ${job.contract} • ${job.location}</div>
+            <div class="tags">
+              <span class="tag" data-filter="${job.role}">${job.role}</span>
+              <span class="tag" data-filter="${job.level}">${job.level}</span>
+              ${job.languages.map(l=>`<span class="tag" data-filter="${l}">${l}</span>`).join('')}
+            </div>
+          </div>
+        `;
+        jobsGrid.appendChild(card);
+      });
+      // add listeners to tags inside cards
+      document.querySelectorAll('.tag').forEach(t=>{
+        t.addEventListener('click', ()=>{
+          const f = t.dataset.filter;
+          toggleFilter(f);
+        });
+      });
+    }
+
+    function toggleFilter(filter){
+      if(filter === 'all') { activeFilters.clear(); updateChips(); applyFilters(); return }
+      if(activeFilters.has(filter)) activeFilters.delete(filter); else activeFilters.add(filter);
+      updateChips();
+      applyFilters();
+    }
+
+    function updateChips(){
+      document.querySelectorAll('.chip').forEach(c=>{
+        const f = c.dataset.filter;
+        if(f==='all'){
+          c.classList.toggle('active', activeFilters.size===0);
+        } else {
+          c.classList.toggle('active', activeFilters.has(f));
+        }
+      });
+    }
+
+    function applyFilters(){
+      if(activeFilters.size===0){ renderJobs(jobs); return }
+      const filters = Array.from(activeFilters).map(s=>s.toLowerCase());
+      const filtered = jobs.filter(job=>{
+        const tags = [job.role, job.level, ...(job.languages||[])].map(t=>t.toLowerCase());
+        // require that all active filters are present in tags
+        return filters.every(f=> tags.includes(f));
+      });
+      renderJobs(filtered);
+    }
+
+    // chip clicks
+    filterBar.addEventListener('click', (e)=>{
+      const chip = e.target.closest('.chip');
+      if(!chip) return;
+      const f = chip.dataset.filter;
+      toggleFilter(f);
+    });
+
+    clearBtn.addEventListener('click', ()=>{ activeFilters.clear(); updateChips(); applyFilters(); });
+
+    // initial render
+    renderJobs(jobs);
+    updateChips();
+  </script>
+</body>
+</html>
